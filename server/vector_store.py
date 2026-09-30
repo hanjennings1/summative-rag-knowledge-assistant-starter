@@ -1,6 +1,7 @@
 from typing import Any, List
 
 import chromadb
+from chromadb.config import Settings
 import requests
 
 from config import Config
@@ -8,26 +9,17 @@ from documents import DocumentChunk
 
 
 def get_chroma_client():
-    """
-    Create and return a persistent Chroma client.
-
-    TODO:
-    - Use Config.CHROMA_PATH as the local storage path.
-    - Return a chromadb.PersistentClient.
-    """
-    raise NotImplementedError("TODO: Create and return a persistent Chroma client.")
+    """ Create and return a persistent Chroma client. """
+    return chromadb.PersistentClient(
+        path=Config.CHROMA_PATH,
+        settings=Settings(anonymized_telemetry=False),
+    )
 
 
 def get_or_create_collection():
-    """
-    Get or create the Chroma collection for the knowledge assistant.
-
-    TODO:
-    - Use get_chroma_client().
-    - Use Config.COLLECTION_NAME as the collection name.
-    - Return the collection.
-    """
-    raise NotImplementedError("TODO: Get or create the Chroma collection.")
+    """ Get or create the Chroma collection for the knowledge assistant. """
+    client = get_chroma_client()
+    return client.get_or_create_collection(name=Config.COLLECTION_NAME)
 
 
 def get_embedding(text: str) -> list[float]:
