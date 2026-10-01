@@ -9,7 +9,7 @@ from documents import DocumentChunk
 
 
 def get_chroma_client():
-    """ Create and return a persistent Chroma client. """
+    """Create and return a persistent Chroma client."""
     return chromadb.PersistentClient(
         path=Config.CHROMA_PATH,
         settings=Settings(anonymized_telemetry=False),
@@ -17,31 +17,27 @@ def get_chroma_client():
 
 
 def get_or_create_collection():
-    """ Get or create the Chroma collection for the knowledge assistant. """
+    """Get or create the Chroma collection for the knowledge assistant."""
     client = get_chroma_client()
     return client.get_or_create_collection(name=Config.COLLECTION_NAME)
 
 
 def get_embedding(text: str) -> list[float]:
-    """
-    Create an embedding for a piece of text using the local model service.
-
-    TODO:
-    - Send a POST request to the Ollama embed endpoint (https://docs.ollama.com/api/embed).
-    - Use Config.OLLAMA_BASE_URL.
-    - Use Config.EMBEDDING_MODEL.
-    - Return the embedding list from the response.
-
-    Endpoint:
-        POST {OLLAMA_BASE_URL}/api/embed
-
-    Example request body:
-        {
+    """Create an embedding for a piece of text using the local model service."""
+    # Send the text to Ollama's embed endpoint, using the model set in .env.
+    # Note: /api/embed expects "input" (the older /api/embeddings used "prompt").
+    response = requests.post(
+        f"{Config.OLLAMA_BASE_URL}/api/embed",
+        json={
             "model": Config.EMBEDDING_MODEL,
-            "prompt": text
-        }
-    """
-    raise NotImplementedError("TODO: Create embeddings with the configured embedding model.")
+            "input": text,
+        },
+        timeout=120,        # Avoid hanging forever if Ollama stalls.
+    )
+    # Raise a clear error if Ollama returns a bad status (ex: 'model not found').
+    response.raise_for_status()
+    # Ollama returns a list of embeddings (one per input); we sent one text, so return the first.
+    return response.json()["embeddings"][0]
 
 
 def seed_vector_store(chunks: List[DocumentChunk]) -> int:
