@@ -23,8 +23,19 @@ def health():
 def ask_question():
     """Receive a question from the frontend and return an answer with sources."""
     # Read JSON from the request body.
-    data = request.get_json(silent=True) or {}
-    question = data.get("question", "").strip()
+    data = request.get_json(silent=True)
+
+    # Validate that the body is a JSON object, ex: {"question": "..."}.
+    if not isinstance(data, dict):
+        return jsonify({"error": "Request body must be a JSON object with a question field."}), 400
+
+    question = data.get("question", "")
+
+    # Validate that the question is text before cleaning it up.
+    if not isinstance(question, str):
+        return jsonify({"error": "Question must be a string."}), 400
+
+    question = question.strip()
 
     # Validate that the question exists and is not blank.
     # Return a helpful error response if the question is missing.
@@ -36,7 +47,6 @@ def ask_question():
 
     # Return the result as JSON.
     return jsonify(result), 200
-
 
 
 if __name__ == "__main__":
