@@ -10,6 +10,7 @@ from documents import DocumentChunk
 
 def get_chroma_client():
     """Create and return a persistent Chroma client."""
+    # Saves vectors to disk at CHROMA_PATH; telemetry off to keep logs clean.
     return chromadb.PersistentClient(
         path=Config.CHROMA_PATH,
         settings=Settings(anonymized_telemetry=False),
@@ -18,6 +19,7 @@ def get_chroma_client():
 
 def get_or_create_collection():
     """Get or create the Chroma collection for the knowledge assistant."""
+    # Reuses the collection if it already exists, so re-running is safe.
     client = get_chroma_client()
     return client.get_or_create_collection(name=Config.COLLECTION_NAME)
 
