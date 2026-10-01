@@ -21,44 +21,22 @@ def health():
 
 @app.post("/api/ask")
 def ask_question():
-    """
-    Receive a question from the frontend and return an answer with sources.
-
-    TODO:
-    - Read JSON from the request body.
-    - Validate that the question exists and is not blank.
-    - Call answer_question(question).
-    - Return the result as JSON.
-    - Return a helpful error response if the question is missing.
-    """
+    """Receive a question from the frontend and return an answer with sources."""
+    # Read JSON from the request body.
     data = request.get_json(silent=True) or {}
     question = data.get("question", "").strip()
 
+    # Validate that the question exists and is not blank.
+    # Return a helpful error response if the question is missing.
     if not question:
         return jsonify({"error": "Question is required."}), 400
 
-    # TODO:
-    # Replace this starter response by calling answer_question(question).
-    #
-    # Expected return shape:
-    # {
-    #     "answer": "...",
-    #     "sources": [...]
-    # }
-    #
-    # Example:
-    # result = answer_question(question)
-    # return jsonify(result), 200
+    # Call answer_question(question).
+    result = answer_question(question)
 
-    return jsonify(
-        {
-            "error": (
-                "The /api/ask route is connected, but the RAG workflow is not implemented yet. "
-                "Complete the TODO in server/app.py."
-            ),
-            "sources": [],
-        }
-    ), 501
+    # Return the result as JSON.
+    return jsonify(result), 200
+
 
 
 if __name__ == "__main__":
