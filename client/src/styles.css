@@ -196,3 +196,8 @@ h2 {
   line-height: 1.6;
   margin-bottom: 0;
 }
+
+/* Preserve line breaks from the model's answer so numbered steps display on separate lines. */
+.response-section p {
+  white-space: pre-line;
+}

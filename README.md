@@ -39,18 +39,21 @@ seed_knowledge_base.py
 ## Project Structure
 
 ```
-├── client/                  React + Vite frontend
-│   └── src/App.jsx          Chat interface, answer and source display
+├── client/                     React + Vite frontend
+│   ├── package.json            Frontend dependencies and scripts
+│   └── src/App.jsx             Chat interface, answer and source display
 ├── server/
-│   ├── app.py               Flask routes (/api/health, /api/ask)
-│   ├── config.py            Loads settings from .env
-│   ├── documents.py         Loads and chunks knowledge base files
-│   ├── vector_store.py      Chroma setup, embeddings, seeding, retrieval
-│   ├── rag_service.py       RAG workflow: retrieve, prompt, generate, format
+│   ├── app.py                  Flask routes (/api/health, /api/ask)
+│   ├── config.py               Loads settings from .env
+│   ├── documents.py            Loads and chunks knowledge base files
+│   ├── vector_store.py         Chroma setup, embeddings, seeding, retrieval
+│   ├── rag_service.py          RAG workflow: retrieve, prompt, generate, format
 │   ├── seed_knowledge_base.py  Indexes the knowledge base into Chroma
-│   ├── knowledge_base/      Approved source documents (.txt)
-│   ├── requirements.txt
-│   └── .env.example
+│   ├── knowledge_base/         Approved source documents (.txt)
+│   ├── requirements.txt        Python dependencies (pip)
+│   ├── Pipfile                 Python dependencies (pipenv)
+│   └── .env.example            Template for environment variables
+├── rag-powered-knowledge-assistant-lab.png  App screenshot
 └── README.md
 ```
 
@@ -230,6 +233,7 @@ All questions were tested through the frontend. Each returned a `200` status, an
 - **Invalid request bodies (tested with curl):** a numeric question, a JSON list, and non-JSON text each return a `400` with a clear message.
 - **Ollama stopped:** `/api/ask` returns a `503` with a clear message instead of crashing.
 - **Re-seeding:** running the seed script twice keeps the collection at 9 chunks.
+- **Answer consistency:** asking the same question more than once can produce different answers. One run of the dashboard question returned a shorter answer that left out the status page and escalation steps. Lowering `TEMPERATURE` further could make answers more consistent.
 
 ## Refinements Made
 
@@ -239,13 +243,13 @@ All questions were tested through the frontend. Each returned a `200` status, an
 - **Added input validation:** `/api/ask` rejects non-object bodies and non-string questions with a `400` instead of returning a `500`.
 - **Added model service error handling:** connection failures and timeouts return a `503`, and Ollama error responses return a `502`, so the frontend gets a clear message.
 - **Included distance scores in retrieval results:** each retrieved chunk carries its Chroma distance (the optional score from the starter TODO), which made it possible to compare retrieval quality across test questions.
+- **Preserved line breaks in answers:** numbered steps from the model originally displayed as one run-on paragraph. Added `white-space: pre-line` to the answer paragraph in `client/src/styles.css`, so each step now appears on its own line.
 
 ## Known Limitations and Future Improvements
 
 - **Chunks can split mid-sentence.** Chunking is based on word count, so a chunk can start or end partway through a sentence, which occasionally causes the model to blend unrelated phrases. Sentence- or paragraph-aware chunking would improve this.
 - **Irrelevant sources are still shown.** Chroma always returns the `TOP_K` closest chunks, even when none are relevant, so off-topic questions still display sources. A distance threshold could filter out weak matches.
 - **Prompt wording leaks into answers.** Answers often begin with "According to the provided context," which isn't meaningful to employees. Adjusting the prompt instructions could produce more natural answers.
-- **Answer formatting.** Numbered steps in answers display as one paragraph because line breaks aren't preserved in the frontend. Preserving line breaks would improve readability.
 - **Similar-looking sources.** Two chunks from the same file display with identical titles. Showing the chunk or section number would help users tell them apart.
 - **Hard-coded request timeout.** Ollama requests use a fixed 120-second timeout, which could be moved to an environment variable.
 - **No chat history or feedback.** Each question is independent. Future versions could save conversation history and let users mark answers as helpful or unhelpful.
