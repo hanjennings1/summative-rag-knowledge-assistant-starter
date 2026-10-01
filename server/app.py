@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import requests
 
 from config import Config
 from rag_service import answer_question
@@ -43,7 +44,15 @@ def ask_question():
         return jsonify({"error": "Question is required."}), 400
 
     # Call answer_question(question).
-    result = answer_question(question)
+    # Catch model service errors so the frontend gets a clear message instead of a crash.
+    try:
+        result = answer_question(question)
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        # Ollama isn't running or didn't respond in time.
+        return jsonify({"error": "The model service is unavailable. Make sure Ollama is running."}), 503
+    except requests.exceptions.RequestException:
+        # Ollama responded with an error (ex: 'model not pulled').
+        return jsonify({"error": "The model service returned an error. Check the server logs."}), 502
 
     # Return the result as JSON.
     return jsonify(result), 200
