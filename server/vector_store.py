@@ -43,22 +43,40 @@ def get_embedding(text: str) -> list[float]:
 
 
 def seed_vector_store(chunks: List[DocumentChunk]) -> int:
-    """
-    Add document chunks to the Chroma collection.
+    """Add document chunks to the Chroma collection."""
+    # Get or create the collection.
+    collection = get_or_create_collection()
 
-    TODO:
-    - Get or create the collection.
-    - Convert each chunk into:
-        - id
-        - document text
-        - metadata with source, title, and chunk_index
-        - embedding
-    - Add or update the chunks in Chroma (recommend using collection.upsert(...) to prevent duplicating existing records).
-    - Return the number of chunks added.
+    # Chroma takes parallel lists: item i in each list belongs to the same chunk.
+    ids = []
+    documents = []
+    metadatas = []
+    embeddings = []
 
-    Keep source metadata because the frontend needs to display sources.
-    """
-    raise NotImplementedError("TODO: Seed Chroma with document chunks and metadata.")
+    # Convert each chunk into: id, document text, metadata, and embedding.
+    for chunk in chunks:
+        ids.append(chunk.id)
+        documents.append(chunk.text)
+        # Keep source metadata because the frontend needs to display sources.
+        metadatas.append(
+            {
+                "source": chunk.source,
+                "title": chunk.title,
+                "chunk_index": chunk.chunk_index,
+            }
+        )
+        embeddings.append(get_embedding(chunk.text))
+    
+    # -Add or update the chunks in Chroma (recommend using collection.upsert(...) to prevent duplicating existing records).
+    collection.upsert(
+        ids=ids,
+        documents=documents,
+        metadatas=metadatas,
+        embeddings=embeddings,
+    )
+    
+    # - Return the number of chunks added.
+    return len(chunks)
 
 
 def retrieve_relevant_chunks(question: str, top_k: int | None = None) -> list[dict[str, Any]]:
