@@ -67,7 +67,7 @@ def seed_vector_store(chunks: List[DocumentChunk]) -> int:
         )
         embeddings.append(get_embedding(chunk.text))
     
-    # -Add or update the chunks in Chroma (recommend using collection.upsert(...) to prevent duplicating existing records).
+    # Add or update the chunks in Chroma (recommend using collection.upsert(...) to prevent duplicating existing records).
     collection.upsert(
         ids=ids,
         documents=documents,
@@ -75,33 +75,44 @@ def seed_vector_store(chunks: List[DocumentChunk]) -> int:
         embeddings=embeddings,
     )
     
-    # - Return the number of chunks added.
+    # Return the number of chunks added.
     return len(chunks)
 
 
 def retrieve_relevant_chunks(question: str, top_k: int | None = None) -> list[dict[str, Any]]:
-    """
-    Retrieve relevant chunks for a user question.
+    """Retrieve relevant chunks for a user question."""
+    # Fall back to TOP_K from .env if no value is passed in.
+    top_k = top_k or Config.TOP_K
 
-    TODO:
-    - Create an embedding for the question.
-    - Query the Chroma collection.
-    - Return a list of dictionaries with:
-        - text
-        - source
-        - title
-        - chunk_index
-        - optional distance or score
+    # Create an embedding for the question.
+    question_embedding = get_embedding(question)
 
-    The RAG workflow expects a list shaped like this:
+    # Query the Chroma collection.
+    collection = get_or_create_collection()     # reconnects to the collection the user seeded
+    results = collection.query(
+        query_embeddings = [question_embedding], # Chroma accepts multiple questions at once, this is sent as list of one
+        n_results = top_k,                       # uses top_k from .env file, asks for this number of chunks
+        include = ["documents", "metadatas", "distances"],   # default fields, written for documentation sake
+    )
 
-        [
+    # Return a list of dictionaries with: text, source, title, chunk_index (opt: distance/score)
+    documents = results["documents"][0]
+    metadatas = results["metadatas"][0]
+    distances = results["distances"][0]
+
+    chunks = []
+
+    # (Based on example provided in starter comments)
+    # zip pairs up item i from each list, since they all describe the same chunk.
+    for text, metadata, distance in zip(documents, metadatas, distances):
+        chunks.append(
             {
-                "text": "Relevant source text...",
-                "source": "product_support.txt",
-                "title": "Product Support Guide",
-                "chunk_index": 0
+                "text": text,
+                "source": metadata.get("source", "unknown"),
+                "title": metadata.get("title", "Unknown Source"),
+                "chunk_index": metadata.get("chunk_index"),
+                "distance": distance,
             }
-        ]
-    """
-    raise NotImplementedError("TODO: Retrieve relevant chunks for the user question.")
+        )
+
+    return chunks
