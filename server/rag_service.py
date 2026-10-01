@@ -7,15 +7,7 @@ from vector_store import retrieve_relevant_chunks
 
 
 def answer_question(question: str) -> dict[str, Any]:
-    """
-    Run the RAG workflow for a user question.
-
-    This function should:
-    1. Retrieve relevant chunks.
-    2. Build a prompt from the question and retrieved context.
-    3. Send the prompt to the model service.
-    4. Return the generated answer and supporting sources.
-    """
+    """Run the RAG workflow for a user question: PROVIDED"""
     chunks = retrieve_relevant_chunks(question, top_k=Config.TOP_K)
 
     if not chunks:
@@ -37,11 +29,8 @@ def answer_question(question: str) -> dict[str, Any]:
 
 
 def build_prompt(question: str, chunks: list[dict[str, Any]]) -> str:
-    """
-    Build a prompt that asks the model to answer using only retrieved context.
-
-    This helper is provided. You may refine it if needed.
-    """
+    """Build a prompt that asks the model to answer using only retrieved context: PROVIDED
+    You may refine it if needed."""
     context_blocks = []
 
     for index, chunk in enumerate(chunks, start=1):
@@ -75,39 +64,32 @@ Answer:
 
 
 def call_generation_model(prompt: str) -> str:
-    """
-    Send the final prompt to the configured generation model.
-
-    TODO:
-    - Send a POST request to the Ollama generation endpoint.
-    - Use Config.OLLAMA_BASE_URL.
-    - Use Config.GENERATION_MODEL.
-    - Use Config.TEMPERATURE.
-    - Request a non-streaming response.
-    - Return the generated response text.
-
-    Endpoint:
-        POST {OLLAMA_BASE_URL}/api/generate
-
-    Example request body:
-        {
+    """Send the final prompt to the configured generation model."""
+    # - Send a POST request to the Ollama generation endpoint
+    # - Use Config.OLLAMA_BASE_URL. /  Config.GENERATION_MODEL. / Config.TEMPERATURE.
+    response = requests.post(
+        f"{Config.OLLAMA_BASE_URL}/api/generate",
+        json={
             "model": Config.GENERATION_MODEL,
             "prompt": prompt,
-            "stream": False,
+            "stream": False,      # Request a non-streaming response (one complete answer)
             "options": {
-                "temperature": Config.TEMPERATURE
-            }
-        }
-    """
-    raise NotImplementedError("TODO: Call the configured generation model.")
+                "temperature": Config.TEMPERATURE,
+            },
+        },
+        timeout=120,  # Generation is slower than embedding, especially on the first call.
+    )
+
+    # Raise a clear error if Ollama returns a bad status.
+    response.raise_for_status()
+
+    # Return the generated response text.
+    return response.json()["response"].strip()
 
 
 def format_sources(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """
-    Format retrieved chunks for the frontend.
-
-    This helper is provided. You may adjust the excerpt length if needed.
-    """
+    """Format retrieved chunks for the frontend: PROVIDED
+    You may adjust the excerpt length if needed."""
     sources = []
 
     for chunk in chunks:
